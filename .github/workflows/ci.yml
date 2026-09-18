@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Login Artifactory Docker
-        run: echo "${{ secrets.ARTIFACTORY_TOKEN }}" | docker login ${{ secrets.ARTIFACTORY_DOCKER_URL }} -u sonia.nouri@enicar.ucar.tn --password-stdin
+        run: echo "${{ secrets.ARTIFACTORY_IDENTITY_TOKEN }}" | docker login ${{ secrets.ARTIFACTORY_DOCKER_URL }} -u sonia.nouri@enicar.ucar.tn --password-stdin
       - name: Build et push image
         run: |
           docker build -t ${{ secrets.ARTIFACTORY_DOCKER_URL }}/spring-boot-rest-api-docker-local/spring-boot-rest-api:${{ github.sha }} .
