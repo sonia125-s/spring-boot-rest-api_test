@@ -1,0 +1,52 @@
+stages:
+  - build
+  - test
+  - publish
+  - docker
+
+variables:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+build-job:
+  stage: build
+  image: gradle:6.0.1-jdk8
+  script:
+    - ./gradlew compileJava --no-daemon
+  cache:
+    key: gradle-cache
+    paths:
+      - .gradle/
+
+test-job:
+  stage: test
+  image: gradle:6.0.1-jdk8
+  script:
+    - ./gradlew test --no-daemon
+  artifacts:
+    when: always
+    reports:
+      junit: build/test-results/test/*.xml
+
+publish-artifact:
+  stage: publish
+  image: gradle:6.0.1-jdk8
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+  script:
+    - ./gradlew build -x test --no-daemon
+    - >
+      curl -H "Authorization: Bearer $ARTIFACTORY_TOKEN"
+      -T build/libs/spring-boot-rest-api-0.0.1-SNAPSHOT.jar
+      "$ARTIFACTORY_URL/spring-boot-rest-api-gradle-local/com/ev/spring-boot-rest-api/0.0.1-SNAPSHOT/spring-boot-rest-api-0.0.1-SNAPSHOT.jar"
+
+docker-build-push:
+  stage: docker
+  image: docker:24
+  services:
+    - docker:24-dind
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+  script:
+    - docker login $ARTIFACTORY_DOCKER_URL -u _token -p $ARTIFACTORY_TOKEN
+    - docker build -t $ARTIFACTORY_DOCKER_URL/spring-boot-rest-api-docker-local/spring-boot-rest-api:$CI_COMMIT_SHORT_SHA .
+    - docker push $ARTIFACTORY_DOCKER_URL/spring-boot-rest-api-docker-local/spring-boot-rest-api:$CI_COMMIT_SHORT_SHA
