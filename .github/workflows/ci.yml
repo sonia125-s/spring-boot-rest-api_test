@@ -1,0 +1,52 @@
+name: CI/CD spring-boot-rest-api
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Java 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+      - name: Build et tests
+        run: ./gradlew build --no-daemon
+
+  publish-artifact:
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Java 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+      - name: Build sans les tests
+        run: ./gradlew build -x test --no-daemon
+      - name: Publier vers Artifactory
+        run: |
+          curl -H "Authorization: Bearer ${{ secrets.ARTIFACTORY_TOKEN }}" \
+            -T build/libs/spring-boot-rest-api-0.0.1-SNAPSHOT.jar \
+            "${{ secrets.ARTIFACTORY_URL }}/spring-boot-rest-api-gradle-local/com/ev/spring-boot-rest-api/0.0.1-SNAPSHOT/spring-boot-rest-api-0.0.1-SNAPSHOT.jar"
+
+  docker-build-push:
+    needs: publish-artifact
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login Artifactory Docker
+        run: docker login ${{ secrets.ARTIFACTORY_DOCKER_URL }} -u _token -p ${{ secrets.ARTIFACTORY_TOKEN }}
+      - name: Build et push image
+        run: |
+          docker build -t ${{ secrets.ARTIFACTORY_DOCKER_URL }}/spring-boot-rest-api-docker-local/spring-boot-rest-api:${{ github.sha }} .
+          docker push ${{ secrets.ARTIFACTORY_DOCKER_URL }}/spring-boot-rest-api-docker-local/spring-boot-rest-api:${{ github.sha }}
