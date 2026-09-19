@@ -5,7 +5,6 @@ plugins {
 	id 'idea'
 	id 'application'
 	id 'jacoco'
-	id 'org.sonarqube' version '3.5.0.2730'
 }
 
 group = 'com.ev'
@@ -39,15 +38,5 @@ jacocoTestReport {
 	dependsOn test
 	reports {
 		xml.enabled true
-	}
-}
-
-sonarqube {
-	properties {
-		property "sonar.projectKey", "sonia125-s_spring-boot-rest-api_test"
-		property "sonar.organization", "sonia125-s"
-		property "sonar.host.url", System.getenv('SONAR_HOST_URL')
-		property "sonar.login", System.getenv('SONAR_TOKEN')
-		property "sonar.coverage.jacoco.xmlReportPaths", "build/reports/jacoco/test/jacocoTestReport.xml"
 	}
 }

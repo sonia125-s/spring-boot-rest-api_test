@@ -25,16 +25,26 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Installer Java 17
+      - name: Installer Java 8
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '8'
           distribution: 'temurin'
-      - name: Analyse SonarCloud
+      - name: Générer le rapport de couverture
+        run: ./gradlew test jacocoTestReport --no-daemon
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: ./gradlew test jacocoTestReport sonarqube --no-daemon
+        with:
+          args: >
+            -Dsonar.organization=sonia125-s
+            -Dsonar.projectKey=sonia125-s_spring-boot-rest-api_test
+            -Dsonar.sources=src/main
+            -Dsonar.tests=src/test
+            -Dsonar.java.binaries=build/classes
+            -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/jacoco/test/jacocoTestReport.xml
   publish-artifact:
     needs: [build-test, sonar-analysis]
     runs-on: ubuntu-latest
