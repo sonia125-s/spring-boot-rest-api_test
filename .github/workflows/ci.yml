@@ -25,10 +25,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Installer Java 8
+      - name: Installer Java 17
         uses: actions/setup-java@v4
         with:
-          java-version: '8'
+          java-version: '17'
           distribution: 'temurin'
       - name: Analyse SonarCloud
         env:
